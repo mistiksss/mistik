@@ -46,6 +46,18 @@ def _truncate(value: str, limit: int) -> str:
     return value[: limit - 1] + "…"
 
 
+def _pluralize_ru(number: int, form_one: str, form_few: str, form_many: str) -> str:
+    last_two = abs(number) % 100
+    last_one = last_two % 10
+    if 11 <= last_two <= 14:
+        return form_many
+    if last_one == 1:
+        return form_one
+    if 2 <= last_one <= 4:
+        return form_few
+    return form_many
+
+
 async def _ensure_registered_message(message: Message):
     user = await db.get_user_by_telegram_id(message.from_user.id)
     if user is None:
@@ -346,9 +358,11 @@ async def menu_leaderboard(message: Message) -> None:
 
     lines = ["<b>ТОП-10 по одобренным решениям:</b>"]
     for index, top_user in enumerate(top_users, start=1):
+        approved_count = top_user.approved_solutions_count
+        solutions_word = _pluralize_ru(approved_count, "решение", "решения", "решений")
         lines.append(
             f"{index}. {escape(top_user.nickname)} — "
-            f"{top_user.approved_solutions_count} одобр. | ⭐ {top_user.rating_points}"
+            f"{approved_count} {solutions_word} | ⭐ {top_user.rating_points}"
         )
 
     await message.answer(
